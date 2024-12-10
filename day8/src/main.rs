@@ -1,5 +1,3 @@
-// 989 is too low
-
 use std::collections::{HashMap, HashSet};
 
 type Coord = (i32, i32);
