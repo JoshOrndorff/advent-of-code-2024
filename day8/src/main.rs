@@ -1,5 +1,3 @@
-// Part 1: 613 is too high.
-
 use std::collections::{HashMap, HashSet};
 
 type Coord = (i32, i32);
@@ -25,6 +23,8 @@ fn main() {
                 continue;
             }
 
+            println!("Found antenna of type {c} at {row},{col}");
+
             // When we discover a new antenna, we first iterate through all the previously-known
             // antennas with the same id, calculating the antinode locations formed.
             //
@@ -36,6 +36,8 @@ fn main() {
             let new_row = row as i32;
             let new_col = col as i32;
             for (old_row, old_col) in antennas.get(&c).unwrap_or(&HashSet::new()) {
+                println!("  Existing antenna of type {c} at {old_row},{old_col}");
+
                 // The antinode closer to the new antenna
                 let antinode_new_row = 2 * new_row - old_row;
                 let antinode_new_col = 2 * new_col - old_col;
@@ -43,6 +45,7 @@ fn main() {
                     .entry(c)
                     .or_default()
                     .insert((antinode_new_row, antinode_new_col));
+                println!("    Adding antinode at {antinode_new_row},{antinode_new_col}");
 
                 // The antinode closer to the old antenna
                 let antinode_old_row = 2 * old_row - new_row;
@@ -51,6 +54,7 @@ fn main() {
                     .entry(c)
                     .or_default()
                     .insert((antinode_old_row, antinode_old_col));
+                println!("    Adding antinode at {antinode_old_row},{antinode_old_col}");
             }
 
             // Now we can insert the freshly discovered antenna into the antennas mapping.
@@ -62,12 +66,33 @@ fn main() {
     }
 
     // To solve part 1, we just have to count how many coordinates are in the antinodes map.
-    // Let's first count within an id, then sum all ids.
-    let part_1: usize = antinodes.values().map(|coords| coords.len()).sum();
-    println!("{part_1}");
+    // There may be some locations that have an antinode for multiple antenna types.
+    // The problem is asking us to count the unique locations, not the antinodes themselves.
 
-    // I'm curious is there are any locations that are antinodes for two different types of antennas.
+    // Let's first count within an id, then sum just for fun to show that it matter.
+    let total_antinode_within_map: usize = antinodes
+        .values()
+        .map(|coords| {
+            coords
+                .iter()
+                .filter(|(row, col)| {
+                    row >= &0 && col >= &0 && row < &(height as i32) && col < &(height as i32)
+                })
+                .count()
+        })
+        .sum();
+    println!("Not the part 1 answer. This is what you get it you don't de-dupe the locations: {total_antinode_within_map}");
+
+    // I'm curious whether there are any locations that are antinodes for two different types of antennas.
     // So let's dedupe first and see if we get the same result
-    let deduped_antinode_locations = antinodes.values().flatten().collect::<HashSet<_>>().len();
-    println!("{deduped_antinode_locations}");
+    let deduped_antinode_locations = antinodes
+        .values()
+        .flatten()
+        .collect::<HashSet<_>>()
+        .iter()
+        .filter(|(row, col)| {
+            row >= &0 && col >= &0 && row < &(height as i32) && col < &(height as i32)
+        })
+        .count();
+    println!("Correct part 1: {deduped_antinode_locations}");
 }
