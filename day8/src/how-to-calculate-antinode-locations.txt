@@ -1,0 +1,55 @@
+.........
+.N.......
+.........
+......O..
+.........
+
+Consider the X's
+anx = nx - (ox - nx) = 2nx - ox
+aox = ox + (ox - nx) = 2ox - nx
+
+Consider the Y's
+any = ny - (oy - ny) = 2ny - oy
+aoy = oy + (oy - ny) = 2oy - ny
+
+.........
+......N..
+.........
+.O.......
+.........
+
+Consider the X's
+anx = nx + (nx - ox) = 2nx - ox
+aox = ox - (nx - ox) = 2ox - nx
+
+Consider the Y's
+any = ny - (oy - ny) = 2ny - oy
+aoy = oy + (oy - ny) = 2oy - ny
+
+.........
+.O.......
+.........
+......N..
+.........
+
+Consider the X's
+anx = nx + (nx - ox) = 2nx - ox
+aox = ox - (nx - ox) = 2ox - nx
+
+Consider the Y's
+any = ny + (ny - oy) = 2ny - oy
+aoy = oy - (ny - oy) = 2oy - ny
+
+.........
+......O..
+.........
+.N.......
+.........
+
+Consider the X's
+anx = nx - (ox - nx) = 2nx - ox
+onx = ox + (ox - nx) = 2ox - nx
+
+Consider the Y's
+any = ny + (ny - oy) = 2ny - oy
+aoy = oy - (ny - oy) = 2oy - ny
