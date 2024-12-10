@@ -1,5 +1,3 @@
-// 24803636232561 is too high
-
 #[derive(Debug)]
 /// Allows iterating the non-empty block of a disk snapshot
 /// from both the front and back
@@ -11,7 +9,7 @@ struct DoubleEndedBlockIterator {
     /// Blocks consumed from the current file
     blocks_consumed_front: usize,
     file_index_back: usize,
-    blocks_consumed_back: usize,
+    blocks_remaining_back: usize,
 }
 
 impl DoubleEndedBlockIterator {
@@ -20,16 +18,15 @@ impl DoubleEndedBlockIterator {
         Self {
             file_index_front: 0,
             blocks_consumed_front: 0,
-            file_index_back: file_sizes.len() - 1,
-            blocks_consumed_back: 0,
+            file_index_back: file_sizes.len(),
+            blocks_remaining_back: 0,
             file_sizes,
         }
     }
 
     fn has_met_in_middle(&self) -> bool {
         self.file_index_front == self.file_index_back
-            && self.blocks_consumed_front + self.blocks_consumed_back
-                == self.file_sizes[self.file_index_front]
+            && self.blocks_consumed_front == self.blocks_remaining_back
     }
 }
 
@@ -62,16 +59,14 @@ impl DoubleEndedIterator for DoubleEndedBlockIterator {
             return None;
         }
 
-        let return_value = self.file_index_back;
-        self.blocks_consumed_back += 1;
-
-        // If we're done with this file, move the pointer and reset for next time
-        if self.blocks_consumed_back == self.file_sizes[self.file_index_back] {
+        if self.blocks_remaining_back == 0 {
             self.file_index_back -= 1;
-            self.blocks_consumed_back = 0;
+            self.blocks_remaining_back = self.file_sizes[self.file_index_back];
         }
 
-        Some(return_value)
+        self.blocks_remaining_back -= 1;
+
+        Some(self.file_index_back)
     }
 }
 
@@ -103,7 +98,7 @@ impl Iterator for FinishedDiskIterator {
     type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.blocks_to_pull[0] == 0 {
+        while self.blocks_to_pull[0] == 0 {
             self.blocks_to_pull.remove(0); //TODO prolly should be a vec dequeue or else reverse it an pop off the end.
             self.pulling_from_front = !self.pulling_from_front;
 
@@ -113,25 +108,27 @@ impl Iterator for FinishedDiskIterator {
             }
         }
 
-        if self.pulling_from_front {
-            println!(
-                "about to pull from front with {} remaining.",
-                self.blocks_to_pull[0]
-            );
-        }
         self.blocks_to_pull[0] -= 1;
 
         if self.pulling_from_front {
+            println!(
+                "pulling from front; {} remaining afterwards.",
+                self.blocks_to_pull[0]
+            );
             self.de_block_iter.next()
         } else {
+            println!(
+                "pulling from back; {} remaining afterwards.",
+                self.blocks_to_pull[0]
+            );
             self.de_block_iter.next_back()
         }
     }
 }
-fn rmain() {
+fn main() {
     let input = std::fs::read_to_string("./input.txt").expect("input file should exist");
     // let input = std::fs::read_to_string("./example.txt").expect("input file should exist");
-    let input = "12345";
+    // let input = "12345";
     let starting_disk_map = input
         .trim()
         .chars()
@@ -154,11 +151,11 @@ fn rmain() {
     println!("{checksum}");
 }
 
-fn main() {
-    let mut dei = DoubleEndedBlockIterator::new(vec![1, 3, 5]);
-    dei.next();
-    while let Some(x) = dei.next_back() {
-        println!("{:?}", dei);
-        println!("{x}\n\n");
-    }
-}
+// fn main() {
+//     let mut dei = DoubleEndedBlockIterator::new(vec![1, 3, 5]);
+//     dei.next();
+//     while let Some(x) = dei.next_back() {
+//         println!("{:?}", dei);
+//         println!("{x}\n\n");
+//     }
+// }
