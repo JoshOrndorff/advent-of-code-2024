@@ -1,3 +1,5 @@
+// 989 is too low
+
 use std::collections::{HashMap, HashSet};
 
 type Coord = (i32, i32);
@@ -10,8 +12,10 @@ fn main() {
     let width = map[0].len();
 
     // Two mappings to track the locations of antennas and antinodes. Each mapping is from the antenna type to a set of coordinates.
+    // The antinode rules change for part two so the antinodes are tracked separately for each part.
     let mut antennas: HashMap<char, HashSet<Coord>> = HashMap::new();
-    let mut antinodes: HashMap<char, HashSet<Coord>> = HashMap::new();
+    let mut antinodes1: HashMap<char, HashSet<Coord>> = HashMap::new();
+    let mut antinodes2: HashMap<char, HashSet<Coord>> = HashMap::new();
 
     // Go through the entire map looking for antennas and when one is found:
     // Calculate and catalog antinodes formed with previously known antennas
@@ -38,23 +42,23 @@ fn main() {
             for (old_row, old_col) in antennas.get(&c).unwrap_or(&HashSet::new()) {
                 println!("  Existing antenna of type {c} at {old_row},{old_col}");
 
-                // The antinode closer to the new antenna
-                let antinode_new_row = 2 * new_row - old_row;
-                let antinode_new_col = 2 * new_col - old_col;
-                antinodes
-                    .entry(c)
-                    .or_default()
-                    .insert((antinode_new_row, antinode_new_col));
-                println!("    Adding antinode at {antinode_new_row},{antinode_new_col}");
+                // Part 1 rules
+                let s = antinodes1.entry(c).or_default();
+                s.extend(part_1_antinodes(
+                    (*old_row, *old_col),
+                    (new_row, new_col),
+                    width,
+                    height,
+                ));
 
-                // The antinode closer to the old antenna
-                let antinode_old_row = 2 * old_row - new_row;
-                let antinode_old_col = 2 * old_col - new_col;
-                antinodes
-                    .entry(c)
-                    .or_default()
-                    .insert((antinode_old_row, antinode_old_col));
-                println!("    Adding antinode at {antinode_old_row},{antinode_old_col}");
+                // Part 2 rules
+                let s = antinodes2.entry(c).or_default();
+                s.extend(part_2_antinodes(
+                    (*old_row, *old_col),
+                    (new_row, new_col),
+                    width,
+                    height,
+                ));
             }
 
             // Now we can insert the freshly discovered antenna into the antennas mapping.
@@ -65,34 +69,74 @@ fn main() {
         }
     }
 
-    // To solve part 1, we just have to count how many coordinates are in the antinodes map.
-    // There may be some locations that have an antinode for multiple antenna types.
-    // The problem is asking us to count the unique locations, not the antinodes themselves.
+    // Count the unique locations by part 1 rules
+    let deduped_antinode_locations = antinodes1.values().flatten().collect::<HashSet<_>>().len();
+    println!("Part 1: {deduped_antinode_locations}");
 
-    // Let's first count within an id, then sum just for fun to show that it matter.
-    let total_antinode_within_map: usize = antinodes
-        .values()
-        .map(|coords| {
-            coords
-                .iter()
-                .filter(|(row, col)| {
-                    row >= &0 && col >= &0 && row < &(height as i32) && col < &(height as i32)
-                })
-                .count()
-        })
-        .sum();
-    println!("Not the part 1 answer. This is what you get it you don't de-dupe the locations: {total_antinode_within_map}");
+    // Count the unique locations by part 1 rules
+    let deduped_antinode_locations = antinodes2.values().flatten().collect::<HashSet<_>>().len();
+    println!("Part 2: {deduped_antinode_locations}");
+}
 
-    // I'm curious whether there are any locations that are antinodes for two different types of antennas.
-    // So let's dedupe first and see if we get the same result
-    let deduped_antinode_locations = antinodes
-        .values()
-        .flatten()
-        .collect::<HashSet<_>>()
-        .iter()
-        .filter(|(row, col)| {
-            row >= &0 && col >= &0 && row < &(height as i32) && col < &(height as i32)
-        })
-        .count();
-    println!("Correct part 1: {deduped_antinode_locations}");
+fn part_1_antinodes(
+    (old_row, old_col): Coord,
+    (new_row, new_col): Coord,
+    w: usize,
+    h: usize,
+) -> Vec<Coord> {
+    let mut locations = Vec::new();
+
+    // The antinode closer to the new antenna
+    let antinode_new_row = 2 * new_row - old_row;
+    let antinode_new_col = 2 * new_col - old_col;
+    if in_map((antinode_new_row, antinode_new_col), w, h) {
+        locations.push((antinode_new_row, antinode_new_col));
+    }
+
+    // The antinode closer to the old antenna
+    let antinode_old_row = 2 * old_row - new_row;
+    let antinode_old_col = 2 * old_col - new_col;
+    if in_map((antinode_old_row, antinode_old_col), w, h) {
+        locations.push((antinode_old_row, antinode_old_col));
+    }
+
+    locations
+}
+
+// The only difference is the loop really.
+fn part_2_antinodes(
+    (old_row, old_col): Coord,
+    (new_row, new_col): Coord,
+    w: usize,
+    h: usize,
+) -> Vec<Coord> {
+    let mut locations = Vec::new();
+
+    // The antinodes closer to the new antenna
+    for n in 0.. {
+        let antinode_new_row = (n + 1) * new_row - n * old_row;
+        let antinode_new_col = (n + 1) * new_col - n * old_col;
+        if in_map((antinode_new_row, antinode_new_col), w, h) {
+            locations.push((antinode_new_row, antinode_new_col));
+        } else {
+            break;
+        }
+    }
+
+    // The antinodes closer to the old antenna
+    for n in 0.. {
+        let antinode_old_row = (n + 1) * old_row - n * new_row;
+        let antinode_old_col = (n + 1) * old_col - n * new_col;
+        if in_map((antinode_old_row, antinode_old_col), w, h) {
+            locations.push((antinode_old_row, antinode_old_col));
+        } else {
+            break;
+        }
+    }
+
+    locations
+}
+
+fn in_map((row, col): Coord, w: usize, h: usize) -> bool {
+    row >= 0 && col >= 0 && row < h as i32 && col < w as i32
 }
