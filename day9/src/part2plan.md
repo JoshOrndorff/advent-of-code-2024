@@ -43,7 +43,7 @@ We are now done with the iteration over free space. Exit early and start again f
 ---
 
 Move on to the next file which is id 4 and has a length of 3.
-The first available free space starts at index five and has a length of 1. This is not long enough.
+The first available free space starts at index eight and has a length of 1. This is not long enough.
 The next free space starts at 11 and has a length of six. This is enough.
 
 The file moves to start at position 11.
