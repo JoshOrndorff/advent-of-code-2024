@@ -31,8 +31,8 @@ fn expand_single(rock: &str) -> Vec<String> {
         next_gen.push(rock[..l].to_string());
 
         // The right half may have leading zeros.
-        let fisrt_nonzero_in_right_half_index = rock[l..].find(|c| c != '0');
-        let next_val = match fisrt_nonzero_in_right_half_index {
+        let first_nonzero_in_right_half_index = rock[l..].find(|c| c != '0');
+        let next_val = match first_nonzero_in_right_half_index {
             Some(i) => &rock[(l + i)..],
             None => "0",
         }
