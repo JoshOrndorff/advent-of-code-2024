@@ -23,7 +23,7 @@ fn main() {
     // );
 
     // Solve part 2 by recursive expansion with a cache.
-    let mut cache = HashMap::<(usize, String), Vec<String>>::new();
+    let mut cache = HashMap::<(usize, String), usize>>::new();
     println!(
         "Part 2 via cached recursive expansion: {}",
         recursive_expansion(45, &starting_sequence, &mut cache).len()
@@ -77,33 +77,36 @@ fn direct_expansion(generations: usize, starting_sequence: &Vec<String>) -> Vec<
 /// Solves the rock problem in a depth first way fully expanding the first rock in the starting
 /// sequence before moving on to the second.
 /// This allows caching.
+/// 
+/// This function returns the number of rocks in each generation up to the one given.
+/// This allows better caching.
 fn recursive_expansion(
     generations: usize,
     starting_sequence: &Vec<String>,
-    cache: &mut HashMap<(usize, String), Vec<String>>,
-) -> Vec<String> {
+    cache: &mut HashMap<(usize, String), usize>,
+) -> Vec<usize> {
     // The terminating case is when we are asked for zero generations. Then we just return the rocks we were given.
     if generations == 0 {
-        return starting_sequence.clone();
+        return vec![starting_sequence.len()];
     }
 
-    let mut fully_expanded: Vec<String> = Vec::new();
+    let mut total_len = 0usize;
 
     for rock in starting_sequence {
         // Check if the call we are making is already in the cache.
         let cache_key = (generations, rock.clone());
         if let Some(cached_result) = cache.get(&cache_key) {
-            // println!("CACHE HIT BABY!!!! {:?}", cache_key);
-            fully_expanded.extend(cached_result.clone());
+            println!("CACHE HIT BABY!!!! {:?}", cache_key);
+            total_len += cached_result;
             continue; // on to the next rock
         }
         println!("cache miss {:?}", cache_key);
 
-        let single_rock_expansion =
+        let single_rock_expansions =
             recursive_expansion(generations - 1, &expand_single(rock), cache);
         cache.insert(cache_key, single_rock_expansion.clone());
-        fully_expanded.extend(single_rock_expansion);
+        total_len += single_rock_expansions[0];
     }
 
-    fully_expanded
+    todo!()
 }
