@@ -1,3 +1,90 @@
+// The big problem with my current caching is that it only caches the result for the exact requested number of generations.
+// This is true whether we are returning the actual nth generation or just the size of that generation.
+// I would need to cache all the intermediate generations too.
+// For example. If I encounter an N with 17 generations to go, I will need to calculate each of the intermediate generations.
+// So I _should_ cache the result for N after 1 generation, N after 2 gen..., n after 17 generations.
+//
+// One way to implement this is to return a vector with the result for all the intermediate generations.
+// So in the example above I would get back [n after 1 gen, n after 2 gen, ..., n after 17 gen]. Then I can cache them all
+//
+
+// ALTERNATE APPROACH
+// Consider a rock "pregnant" and when it is ripe it will split into two.
+// When you first encounter a number you do a short loop to see how many generation until it splits and what it splits into.
+// The "cache" is a table that keeps track of the gestation period for each number and what it turns into.
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+enum Rock {
+    Unfamiliar(String),
+    Familiar(FamiliarRock),
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+struct FamiliarRock {
+    age: usize,
+    gestation_period: usize,
+    descendants: Vec<Rock>,
+}
+
+impl Rock {
+    fn familiarize(self) -> Rock {
+        match self {
+            Rock::Familiar(_) => self,
+            Rock::Unfamiliar(mut number) => {
+                // We do not yet know the gestation period.
+                // We will discover it by watching this one and keeping a tally.
+                let mut gestation_period = 0usize;
+                loop {
+                    gestation_period += 1;
+                    let next_gen = expand_single(&number);
+
+                    if next_gen.len() == 1 {
+                        number = next_gen[0].clone();
+                    } else if next_gen.len() == 2 {
+                        return Rock::Familiar(FamiliarRock {
+                            age: 0,
+                            gestation_period,
+                            descendants: next_gen
+                                .iter()
+                                .map(|s| Self::Unfamiliar(s.clone()))
+                                .collect::<Vec<_>>(),
+                        });
+                    } else {
+                        println!("wtf. How can a next generation have a length of {}? It should always be 1 or 2.", next_gen.len());
+                    }
+                }
+            }
+        }
+    }
+
+    fn cached_familiarize(self, cache: &mut HashMap<Self, FamiliarRock>) -> Rock {
+        match self {
+            Rock::Familiar(_) => self,
+            Rock::Unfamiliar(mut number) => {
+                if let Some(previously_studied_rock) = cache.get(&self) {
+                    Rock::Familiar(previously_studied_rock.clone())
+                } else {
+                    let result = self.familiarize();
+                    cache.insert(self, v)
+                }
+            }
+        }
+    }
+}
+
+impl FamiliarRock {
+    /// Ages a rock by one blink.
+    /// If it reaches gestation age, it will be split into two rocks.
+    fn age(mut self) -> Vec<FamiliarRock> {
+        self.age += 1;
+
+        if self.age != self.gestation_period {
+            self
+        } else {
+            self.descendants
+        }
+    }
+}
+
 use std::collections::HashMap;
 
 fn main() {
@@ -23,7 +110,7 @@ fn main() {
     // );
 
     // Solve part 2 by recursive expansion with a cache.
-    let mut cache = HashMap::<(usize, String), usize>>::new();
+    let mut cache = HashMap::<(usize, String), usize>::new();
     println!(
         "Part 2 via cached recursive expansion: {}",
         recursive_expansion(45, &starting_sequence, &mut cache).len()
@@ -77,7 +164,7 @@ fn direct_expansion(generations: usize, starting_sequence: &Vec<String>) -> Vec<
 /// Solves the rock problem in a depth first way fully expanding the first rock in the starting
 /// sequence before moving on to the second.
 /// This allows caching.
-/// 
+///
 /// This function returns the number of rocks in each generation up to the one given.
 /// This allows better caching.
 fn recursive_expansion(
