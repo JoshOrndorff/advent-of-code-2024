@@ -1,3 +1,5 @@
+// part 2 832748 is too low even though it solves the example. Grrr.
+
 use std::collections::HashSet;
 
 struct Region {
@@ -49,7 +51,7 @@ fn main() {
             total_standard_price += standard_price;
             total_bulk_price += bulk_price;
 
-            println!("A region of {} plants with area: {area}, perimiter: {perimeter}, and sides: {sides}", region.plant_type);
+            println!("A region of {} plants with area: {area} and sides: {sides} and bulk price: {bulk_price}", region.plant_type);
         }
     }
 
@@ -72,7 +74,7 @@ fn calculate_perimeter(region: &Region, width: usize, height: usize) -> usize {
 }
 
 use Facing::*;
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Facing {
     Up,
     Down,
@@ -180,45 +182,45 @@ fn to_my_left(
     }
 }
 
-fn to_my_right(
-    row: usize,
-    col: usize,
-    width: usize,
-    height: usize,
-    facing: Facing,
-    region: &Region,
-) -> Option<(usize, usize)> {
-    match facing {
-        Up => {
-            if col < width - 1 && region.plots.contains(&(row, col + 1)) {
-                Some((row, col + 1))
-            } else {
-                None
-            }
-        }
-        Down => {
-            if col > 0 && region.plots.contains(&(row, col - 1)) {
-                Some((row, col - 1))
-            } else {
-                None
-            }
-        }
-        Left => {
-            if row > 0 && region.plots.contains(&(row - 1, col)) {
-                Some((row - 1, col))
-            } else {
-                None
-            }
-        }
-        Right => {
-            if row < height - 1 && region.plots.contains(&(row + 1, col)) {
-                Some((row + 1, col))
-            } else {
-                None
-            }
-        }
-    }
-}
+// fn to_my_right(
+//     row: usize,
+//     col: usize,
+//     width: usize,
+//     height: usize,
+//     facing: Facing,
+//     region: &Region,
+// ) -> Option<(usize, usize)> {
+//     match facing {
+//         Up => {
+//             if col < width - 1 && region.plots.contains(&(row, col + 1)) {
+//                 Some((row, col + 1))
+//             } else {
+//                 None
+//             }
+//         }
+//         Down => {
+//             if col > 0 && region.plots.contains(&(row, col - 1)) {
+//                 Some((row, col - 1))
+//             } else {
+//                 None
+//             }
+//         }
+//         Left => {
+//             if row > 0 && region.plots.contains(&(row - 1, col)) {
+//                 Some((row - 1, col))
+//             } else {
+//                 None
+//             }
+//         }
+//         Right => {
+//             if row < height - 1 && region.plots.contains(&(row + 1, col)) {
+//                 Some((row + 1, col))
+//             } else {
+//                 None
+//             }
+//         }
+//     }
+// }
 
 // We start at the entry point facing right with our left hand on the fence.
 // The entry is guaranteed to be an (not the) upper left corner.
@@ -228,24 +230,20 @@ fn calculate_sides(region: &Region, width: usize, height: usize) -> usize {
 
     let (mut row, mut col) = region.entry;
     loop {
+        // println!("At position ({row}, {col}) facing {:?}", facing);
         if to_my_left(row, col, width, height, facing, region).is_some() {
             sides += 1;
             facing = facing.turn_left();
+            (row, col) = straight_ahead(row, col, width, height, facing, region).unwrap();
         } else if straight_ahead(row, col, width, height, facing, region).is_some() {
-            // There is nothing to do here except step forward afterwards
-            // but it is important to have this elif clause because we don't want to turn right
-            // if we could have gone straight.
-        } else if to_my_right(row, col, width, height, facing, region).is_some() {
+            (row, col) = straight_ahead(row, col, width, height, facing, region).unwrap();
+        } else {
             sides += 1;
             facing = facing.turn_right();
-        } else {
-            panic!("We weren't able to go left right or forward. Something is fucked.")
         }
 
-        (row, col) = straight_ahead(row, col, width, height, facing, region).unwrap();
-
         // I guess this is how you do a do-while-loop in Rust
-        if (row, col) == region.entry {
+        if (row, col) == region.entry && facing == Right {
             break;
         }
     }
