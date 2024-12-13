@@ -1,8 +1,14 @@
 use std::collections::HashSet;
 
+struct Region {
+    plots: HashSet<(usize, usize)>,
+    entry: (usize, usize),
+    plant_type: char,
+}
+
 fn main() {
-    let input = std::fs::read_to_string("./input.txt").expect("input file should exist");
-    // let input = std::fs::read_to_string("./example.txt").expect("input file should exist");
+    // let input = std::fs::read_to_string("./input.txt").expect("input file should exist");
+    let input = std::fs::read_to_string("./example.txt").expect("input file should exist");
 
     let garden = input
         .lines()
@@ -13,36 +19,238 @@ fn main() {
 
     // Figure out which region each plot is in by iterating over each one and looking at its neighbors.
     let mut explored = HashSet::new();
-    let mut total_price = 0usize;
+    let mut total_standard_price = 0usize;
+    let mut total_bulk_price = 0usize;
     for row in 0..height {
         for col in 0..width {
             if explored.contains(&(row, col)) {
                 continue;
             }
-            print!("A region of {} plants", garden[row][col]);
-            let region =
-                discover_region_recursively((row, col), width, height, &mut explored, &garden);
+            let region = Region {
+                plots: discover_region_recursively(
+                    (row, col),
+                    width,
+                    height,
+                    &mut explored,
+                    &garden,
+                ),
+                entry: (row, col),
+                plant_type: garden[row][col],
+            };
 
             // Calculate the perimeter
-            let mut perimeter = 0usize;
-            for (row, col) in region.clone() {
-                let neighbors = get_neighbors(row, col, width, height);
-                perimeter += 4 - neighbors.len();
-                for neighbor in neighbors {
-                    if !region.contains(&neighbor) {
-                        perimeter += 1;
-                    }
-                }
-            }
+            let perimeter = calculate_perimeter(&region, width, height);
+            let sides = calculate_sides(&region, width, height);
+            let area = region.plots.len();
 
-            let area = region.len();
-            let price = perimeter * area;
-            println!("plants with price {area} x {perimeter} = {price}");
-            total_price += price;
+            let standard_price = perimeter * area;
+            let bulk_price = sides * area;
+
+            total_standard_price += standard_price;
+            total_bulk_price += bulk_price;
+
+            println!("A region of {} plants with area: {area}, perimiter: {perimeter}, and sides: {sides}", region.plant_type);
         }
     }
 
-    println!("total price is {total_price}");
+    println!("total standard price is {total_standard_price}");
+    println!("total bulk price is {total_bulk_price}");
+}
+
+fn calculate_perimeter(region: &Region, width: usize, height: usize) -> usize {
+    let mut perimeter = 0usize;
+    for (row, col) in &region.plots {
+        let neighbors = get_neighbors(*row, *col, width, height);
+        perimeter += 4 - neighbors.len();
+        for neighbor in neighbors {
+            if !region.plots.contains(&neighbor) {
+                perimeter += 1;
+            }
+        }
+    }
+    perimeter
+}
+
+use Facing::*;
+#[derive(Clone, Copy)]
+enum Facing {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+impl Facing {
+    fn turn_left(&self) -> Self {
+        match self {
+            Up => Left,
+            Down => Right,
+            Left => Down,
+            Right => Up,
+        }
+    }
+
+    fn turn_right(&self) -> Self {
+        match self {
+            Up => Right,
+            Down => Left,
+            Left => Up,
+            Right => Down,
+        }
+    }
+}
+
+fn straight_ahead(
+    row: usize,
+    col: usize,
+    width: usize,
+    height: usize,
+    facing: Facing,
+    region: &Region,
+) -> Option<(usize, usize)> {
+    match facing {
+        Up => {
+            if row > 0 && region.plots.contains(&(row - 1, col)) {
+                Some((row - 1, col))
+            } else {
+                None
+            }
+        }
+        Down => {
+            if row < height - 1 && region.plots.contains(&(row + 1, col)) {
+                Some((row + 1, col))
+            } else {
+                None
+            }
+        }
+        Left => {
+            if col > 0 && region.plots.contains(&(row, col - 1)) {
+                Some((row, col - 1))
+            } else {
+                None
+            }
+        }
+        Right => {
+            if col < width - 1 && region.plots.contains(&(row, col + 1)) {
+                Some((row, col + 1))
+            } else {
+                None
+            }
+        }
+    }
+}
+
+fn to_my_left(
+    row: usize,
+    col: usize,
+    width: usize,
+    height: usize,
+    facing: Facing,
+    region: &Region,
+) -> Option<(usize, usize)> {
+    match facing {
+        Up => {
+            if col > 0 && region.plots.contains(&(row, col - 1)) {
+                Some((row, col - 1))
+            } else {
+                None
+            }
+        }
+        Down => {
+            if col < width - 1 && region.plots.contains(&(row, col + 1)) {
+                Some((row, col + 1))
+            } else {
+                None
+            }
+        }
+        Left => {
+            if row < height - 1 && region.plots.contains(&(row + 1, col)) {
+                Some((row + 1, col))
+            } else {
+                None
+            }
+        }
+        Right => {
+            if row > 0 && region.plots.contains(&(row - 1, col)) {
+                Some((row - 1, col))
+            } else {
+                None
+            }
+        }
+    }
+}
+
+fn to_my_right(
+    row: usize,
+    col: usize,
+    width: usize,
+    height: usize,
+    facing: Facing,
+    region: &Region,
+) -> Option<(usize, usize)> {
+    match facing {
+        Up => {
+            if col < width - 1 && region.plots.contains(&(row, col + 1)) {
+                Some((row, col + 1))
+            } else {
+                None
+            }
+        }
+        Down => {
+            if col > 0 && region.plots.contains(&(row, col - 1)) {
+                Some((row, col - 1))
+            } else {
+                None
+            }
+        }
+        Left => {
+            if row > 0 && region.plots.contains(&(row - 1, col)) {
+                Some((row - 1, col))
+            } else {
+                None
+            }
+        }
+        Right => {
+            if row < height - 1 && region.plots.contains(&(row + 1, col)) {
+                Some((row + 1, col))
+            } else {
+                None
+            }
+        }
+    }
+}
+
+// We start at the entry point facing right with our left hand on the fence.
+// The entry is guaranteed to be an (not the) upper left corner.
+fn calculate_sides(region: &Region, width: usize, height: usize) -> usize {
+    let mut sides = 0usize;
+    let mut facing = Right;
+
+    let (mut row, mut col) = region.entry;
+    loop {
+        if to_my_left(row, col, width, height, facing, region).is_some() {
+            sides += 1;
+            facing = facing.turn_left();
+        } else if straight_ahead(row, col, width, height, facing, region).is_some() {
+            // There is nothing to do here except step forward afterwards
+            // but it is important to have this elif clause because we don't want to turn right
+            // if we could have gone straight.
+        } else if to_my_right(row, col, width, height, facing, region).is_some() {
+            sides += 1;
+            facing = facing.turn_right();
+        } else {
+            panic!("We weren't able to go left right or forward. Something is fucked.")
+        }
+
+        (row, col) = straight_ahead(row, col, width, height, facing, region).unwrap();
+
+        // I guess this is how you do a do-while-loop in Rust
+        if (row, col) == region.entry {
+            break;
+        }
+    }
+
+    sides
 }
 
 fn get_neighbors(row: usize, col: usize, width: usize, height: usize) -> Vec<(usize, usize)> {
