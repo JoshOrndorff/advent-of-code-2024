@@ -1,5 +1,3 @@
-// part 2: 77779103984288 is too high
-
 use sscanf::sscanf;
 
 struct Machine {
@@ -62,21 +60,30 @@ impl Machine {
     ///
     /// Once we have b, then we calculate a as a = (px - b * bx) / ax
     fn cost_to_win(&self) -> Option<isize> {
-        // Calculate for coefficients, and watch out for cases where the machine is not solvable
+        // Calculate b, and watch out for cases where the machine is not solvable
         let b_numerator = self.py * self.ax - self.px * self.ay;
         let b_denominator = self.by * self.ax - self.bx * self.ay;
         if b_denominator == 0 {
+            // println!("NOT WINNABLE (denominator zero)");
             return None;
         }
         if b_numerator % b_denominator != 0 {
+            // println!("NOT WINNABLE (b is non integer)");
             return None;
         }
         let b = b_numerator / b_denominator;
-        let a = (self.px - b * self.bx) / self.ax;
+
+        // Calculate b, and watch out for cases where the machine is not solvable
+        let a_numerator = self.px - b * self.bx;
+        if a_numerator % self.ax != 0 {
+            // println!("NOT WINNABLE (a is non integer)");
+            return None;
+        }
+        let a = a_numerator / self.ax;
 
         // Return the cost of pressing those buttons
         let cost = 3 * a + b;
-        println!("Machine is winnable in {a} A presses and {b} B presses. with a cost of {cost}");
+        // println!("Machine is winnable in {a} A presses and {b} B presses. with a cost of {cost}");
         Some(cost)
     }
 }
