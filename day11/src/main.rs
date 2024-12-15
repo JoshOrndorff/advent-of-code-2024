@@ -28,7 +28,7 @@ fn main() {
     let mut cache = HashMap::<String, VecDeque<usize>>::new();
 
     ////// CAREFUL!!! The indices are off by one from what I expected. IDK why.
-    /// But once I figured it out it was easy enough to change it and get that delicious star.
+    ////// But once I figured it out it was easy enough to change it and get that delicious star.
 
     // Solve part 1 by the recursive expansion method
     println!(
@@ -128,7 +128,7 @@ fn recursive_expansion(
     } else {
         // println!("Total MISS for rock {rock} requested {generations} generations.");
     }
-    
+
     // So now we do the real calculating
     let mut next_several_generations;
     if rock == "0" {
@@ -179,7 +179,7 @@ fn recursive_expansion_of_sequence(
             let generations = recursive_expansion(generations, rock, cache);
             // println!("rock in sequence yielded {} length list", generations.len());
             generations
-})
+        })
         .collect::<Vec<_>>();
 
     // This is the thing we will return. It has a slot for each requested generation (including zero)
